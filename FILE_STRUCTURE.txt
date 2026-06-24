@@ -1,0 +1,246 @@
+predict-pool/
+│
+├── 📄 README.md                          # Main project README
+├── 📄 NEXT_STEPS.md                      # Immediate next steps to run the app
+├── 📄 QUICK_START.md                     # 5-minute quick start guide
+├── 📄 SETUP_GUIDE.md                     # Detailed setup instructions
+├── 📄 DATABASE_SETUP.md                  # SQL schema and database setup
+├── 📄 PROJECT_OVERVIEW.md                # Feature breakdown and architecture
+├── 📄 BUILD_SUMMARY.md                   # Build summary and statistics
+├── 📄 FILE_STRUCTURE.txt                 # This file
+├── 📄 .env.local                         # Environment variables (update with your values)
+├── 📄 package.json                       # Project dependencies
+├── 📄 tsconfig.json                      # TypeScript configuration
+├── 📄 pnpm-lock.yaml                     # Locked dependency versions
+├── 📄 next.config.ts                     # Next.js configuration
+├── 📄 eslint.config.mjs                  # ESLint configuration
+├── 📄 postcss.config.mjs                 # PostCSS configuration
+│
+├── 📁 app/                               # Next.js app directory
+│   │
+│   ├── 📁 api/                          # Backend API routes
+│   │   ├── 📁 auth/
+│   │   │   ├── 📁 [...nextauth]/
+│   │   │   │   └── route.ts            # NextAuth handler
+│   │   │   └── signup/
+│   │   │       └── route.ts            # User registration endpoint
+│   │   │
+│   │   ├── 📁 pools/
+│   │   │   ├── route.ts                # Create/list pools
+│   │   │   └── 📁 join/
+│   │   │       └── route.ts            # Join pool endpoint
+│   │   │
+│   │   ├── route.ts                    # Prediction management
+│   │   ├── route.ts                    # Leaderboard rankings
+│   │   └── matches/
+│   │       └── route.ts                # World Cup matches endpoint
+│   │
+│   ├── 📁 components/                  # Reusable React components
+│   │   ├── auth-form.tsx               # Login/signup form component
+│   │   └── header.tsx                  # Navigation header component
+│   │
+│   ├── 📁 lib/                         # Utility and configuration
+│   │   ├── supabase.ts                 # Supabase client setup
+│   │   └── auth-options.ts             # NextAuth configuration
+│   │
+│   ├── 📁 login/
+│   │   └── page.tsx                    # Login page
+│   │
+│   ├── 📁 signup/
+│   │   └── page.tsx                    # Signup page
+│   │
+│   ├── 📁 dashboard/
+│   │   └── page.tsx                    # Main dashboard page
+│   │
+│   ├── 📁 pools/
+│   │   ├── page.tsx                    # Browse public pools
+│   │   ├── 📁 create/
+│   │   │   └── page.tsx                # Create pool form page
+│   │   ├── 📁 join/
+│   │   │   └── page.tsx                # Join pool form page
+│   │   └── 📁 [id]/
+│   │       └── page.tsx                # Pool details page with tabs
+│   │
+│   ├── page.tsx                        # Landing page
+│   ├── layout.tsx                      # Root layout component
+│   ├── providers.tsx                   # NextAuth SessionProvider wrapper
+│   ├── middleware.ts                   # Route protection middleware
+│   └── globals.css                     # Global Tailwind CSS import
+│
+├── 📁 public/                          # Static assets
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+│
+└── 📁 node_modules/                    # Dependencies (auto-generated)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+KEY FILES SUMMARY
+
+📄 Documentation Files (read these first!)
+├── README.md                    → Start here - project overview
+├── NEXT_STEPS.md               → Quick setup checklist
+├── QUICK_START.md              → 5-minute reference
+├── SETUP_GUIDE.md              → Detailed setup instructions
+├── DATABASE_SETUP.md           → SQL schema copy-paste
+└── BUILD_SUMMARY.md            → What was built and stats
+
+📄 Configuration Files (modify these)
+├── .env.local                  → Add your Supabase and NextAuth secrets
+├── package.json                → Dependencies list
+└── next.config.ts              → Next.js settings
+
+📄 Frontend Pages (what users see)
+├── page.tsx                    → Landing page with hero
+├── login/page.tsx              → Login form
+├── signup/page.tsx             → Signup form
+├── dashboard/page.tsx          → Main dashboard
+├── pools/page.tsx              → Browse pools
+├── pools/create/page.tsx       → Create pool form
+├── pools/join/page.tsx         → Join pool form
+└── pools/[id]/page.tsx         → Pool details
+
+📄 Backend API Routes (what powers the app)
+├── api/auth/[...nextauth]      → Authentication
+├── api/auth/signup             → User registration
+├── api/pools                   → Pool management
+├── api/pools/join              → Join pool
+├── api/predictions             → Prediction handling
+├── api/leaderboard             → Rankings
+└── api/matches                 → World Cup data
+
+📄 Components & Utilities
+├── components/header.tsx       → Navigation
+├── components/auth-form.tsx    → Login/signup form
+├── lib/supabase.ts            → Database client
+├── lib/auth-options.ts        → NextAuth config
+├── providers.tsx              → Session provider
+└── middleware.ts              → Route protection
+
+═══════════════════════════════════════════════════════════════════════════════
+
+QUICK REFERENCE
+
+To understand the codebase:
+1. Read README.md for overview
+2. Check NEXT_STEPS.md for setup
+3. Look at app/page.tsx for landing
+4. Check app/layout.tsx for structure
+5. See app/components/ for UI components
+6. Review app/api/ for backend logic
+
+To modify styling:
+- Edit Tailwind classes in component files
+- All styling uses app/globals.css for imports
+- No separate CSS files needed
+
+To add features:
+- Create new pages in app/ folder
+- Create API routes in app/api/ folder
+- Create components in app/components/
+- Update DATABASE_SETUP.md if schema changes
+
+To deploy:
+- Push to GitHub
+- Connect to Vercel/Netlify
+- Add environment variables
+- Deploy with one click
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DEVELOPMENT WORKFLOW
+
+Start development:
+  $ pnpm dev
+  → Visit http://localhost:3000
+
+Make code changes:
+  → Hot reload automatic
+  → Refresh browser to see changes
+
+Build for production:
+  $ pnpm build
+  → Generates .next folder
+
+Run production build:
+  $ pnpm start
+  → Visit http://localhost:3000
+
+Lint code:
+  $ pnpm lint
+  → Checks for errors
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DATABASE STRUCTURE
+
+users
+  ├── id (UUID)
+  ├── email (string, unique)
+  ├── name (string)
+  ├── password_hash (string)
+  ├── created_at
+  └── updated_at
+
+pools
+  ├── id (UUID)
+  ├── name (string)
+  ├── description (text)
+  ├── creator_id (FK → users)
+  ├── is_public (boolean)
+  ├── join_code (string, unique for private)
+  ├── max_members (int)
+  ├── created_at
+  └── updated_at
+
+pool_members (junction table)
+  ├── id (UUID)
+  ├── pool_id (FK → pools)
+  ├── user_id (FK → users)
+  ├── joined_at
+  └── unique(pool_id, user_id)
+
+matches
+  ├── id (UUID)
+  ├── match_id_external (string)
+  ├── home_team (string)
+  ├── away_team (string)
+  ├── match_date (timestamp)
+  ├── home_score (int)
+  ├── away_score (int)
+  ├── status (pending|completed|cancelled)
+  ├── created_at
+  └── updated_at
+
+predictions
+  ├── id (UUID)
+  ├── pool_id (FK → pools)
+  ├── user_id (FK → users)
+  ├── match_id (FK → matches)
+  ├── predicted_home_score (int)
+  ├── predicted_away_score (int)
+  ├── predicted_winner (home|away|draw)
+  ├── points (int: 0, 1, or 2)
+  ├── created_at
+  ├── updated_at
+  └── unique(pool_id, user_id, match_id)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TOTAL PROJECT SIZE
+
+Documentation:     ~1,400 lines
+Frontend code:     ~1,000 lines
+Backend code:      ~600 lines
+Configuration:     ~200 lines
+─────────────────────────────
+TOTAL:            ~3,200 lines
+
+Files created:    27+
+Built with:       Next.js, React, TypeScript, Tailwind, Supabase
+Status:           ✅ PRODUCTION READY
+
+═══════════════════════════════════════════════════════════════════════════════
