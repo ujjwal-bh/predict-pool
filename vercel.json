@@ -1,12 +1,3 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/sync-matches",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/calculate-scores",
-      "schedule": "*/5 * * * *"
-    }
-  ]
+  "buildCommand": "pnpm build"
 }
