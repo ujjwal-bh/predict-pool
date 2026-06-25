@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface Match {
   id: string;
@@ -69,6 +69,13 @@ export function MatchPredictionCard({
 
   const matchDateTime = new Date(match.match_date);
   const isUpcoming = matchDateTime > new Date();
+
+  useEffect(() => {
+    if (initialPrediction) {
+      setHomeScore(initialPrediction.predicted_home_score);
+      setAwayScore(initialPrediction.predicted_away_score);
+    }
+  }, [initialPrediction]);
 
   return (
     <div className={`rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all border ${

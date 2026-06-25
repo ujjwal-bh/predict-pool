@@ -2,49 +2,64 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/lib/auth-options';
 import { supabaseServer } from '@/app/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prediction, PredictionRequest, PredictionResponse } from '@/app/lib/database.type';
 
-export async function POST(req: NextRequest) {
+// ── Raw Supabase row shapes ───────────────────────────────────────────────────
+
+interface MatchRow {
+  id: string;
+  match_date: string;
+  status: 'pending' | 'live' | 'completed';
+}
+
+interface PoolMemberRow {
+  id: string;
+}
+
+// ── POST — create or update a prediction ─────────────────────────────────────
+
+export async function POST(
+  req: NextRequest
+): Promise<NextResponse<PredictionResponse | { error: string }>> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: 'Unauthorized - Please login to make predictions' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const body = await req.json();
+    const body: PredictionRequest & {
+      // also accept camelCase from frontend
+      predictedHomeScore?: number;
+      predictedAwayScore?: number;
+    } = await req.json();
+
     const {
       poolId,
       matchId,
-      predicted_home_score,
-      predicted_away_score,
+      predicted_winner,
       predictedHomeScore,
       predictedAwayScore,
-      predicted_winner
     } = body;
 
     // Support both camelCase and snake_case
-    const homeScore = predictedHomeScore !== undefined ? predictedHomeScore : predicted_home_score;
-    const awayScore = predictedAwayScore !== undefined ? predictedAwayScore : predicted_away_score;
+    const homeScore = predictedHomeScore ?? body.predicted_home_score;
+    const awayScore = predictedAwayScore ?? body.predicted_away_score;
 
-    // Validate required fields
+    // ── Validate required fields ──────────────────────────────────────────
     if (!poolId || !matchId) {
       return NextResponse.json(
-        { error: 'Pool ID and Match ID are required' },
+        { error: 'poolId and matchId are required' },
         { status: 400 }
       );
     }
 
-    // Validate score values
-    if (homeScore === undefined || awayScore === undefined) {
+    if (homeScore === undefined || homeScore === null || awayScore === undefined || awayScore === null) {
       return NextResponse.json(
         { error: 'Both home and away scores are required' },
         { status: 400 }
       );
     }
 
-    // Validate scores are non-negative integers
     if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore)) {
       return NextResponse.json(
         { error: 'Scores must be whole numbers' },
@@ -68,113 +83,110 @@ export async function POST(req: NextRequest) {
 
     const supabase = supabaseServer();
 
-    if (!supabase) {
-      return NextResponse.json(
-        { error: 'Database connection failed' },
-        { status: 500 }
-      );
-    }
+    // ── Membership + match checks in parallel ─────────────────────────────
+    const [
+      { data: rawMember, error: memberError },
+      { data: rawMatch, error: matchError },
+    ] = await Promise.all([
+      supabase
+        .from('pool_members')
+        .select('id')
+        .eq('pool_id', poolId)
+        .eq('user_id', session.user.id)
+        .single(),
 
-    // Determine winner based on prediction (use provided or calculate)
-    let winner = predicted_winner;
-    if (!winner) {
-      winner = 'draw';
-      if (homeScore > awayScore) {
-        winner = 'home';
-      } else if (awayScore > homeScore) {
-        winner = 'away';
-      }
-    }
+      supabase
+        .from('matches')
+        .select('id, match_date, status')
+        .eq('id', matchId)
+        .single(),
+    ]);
 
-    // Verify pool exists and user is member
-    const { data: poolMember, error: memberError } = await supabase
-      .from('pool_members')
-      .select('id')
-      .eq('pool_id', poolId)
-      .eq('user_id', session.user.id)
-      .single();
-
-    if (memberError || !poolMember) {
+    if (memberError || !rawMember) {
       return NextResponse.json(
         { error: 'You are not a member of this pool' },
         { status: 403 }
       );
     }
 
-    // Verify match exists
-    const { data: match, error: matchError } = await supabase
-      .from('matches')
-      .select('id, status')
-      .eq('id', matchId)
-      .single();
-
-    if (matchError || !match) {
-      return NextResponse.json(
-        { error: 'Match not found' },
-        { status: 404 }
-      );
+    if (matchError || !rawMatch) {
+      return NextResponse.json({ error: 'Match not found' }, { status: 404 });
     }
 
-    // Check if match is completed
+    // Cast after confirming no error
+    const member = rawMember as PoolMemberRow;
+    const match = rawMatch as MatchRow;
+
+    // ── Lock predictions once match has started ───────────────────────────
     if (match.status === 'completed') {
       return NextResponse.json(
-        { error: 'Cannot predict on completed matches' },
-        { status: 400 }
+        { error: 'Cannot predict on a completed match' },
+        { status: 403 }
       );
     }
 
-    // Save or update prediction
-    const { data, error } = await supabase
+    if (new Date(match.match_date) <= new Date()) {
+      return NextResponse.json(
+        { error: 'Predictions are locked — this match has already started' },
+        { status: 403 }
+      );
+    }
+
+    // ── Derive winner from scores if not supplied ─────────────────────────
+    const winner: Prediction['predicted_winner'] =
+      predicted_winner ??
+      (homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'draw');
+
+    // ── Upsert ────────────────────────────────────────────────────────────
+    const { data: rawData, error: upsertError } = await supabase
       .from('predictions')
       .upsert(
-        [
-          {
-            pool_id: poolId,
-            user_id: session.user.id,
-            match_id: matchId,
-            predicted_home_score: homeScore,
-            predicted_away_score: awayScore,
-            predicted_winner: winner,
-            points: 0, // Points are calculated when match completes
-          },
-        ],
-        { onConflict: 'pool_id,user_id,match_id' }
+        {
+          pool_id: poolId,
+          user_id: session.user.id,
+          match_id: matchId,
+          predicted_home_score: homeScore,
+          predicted_away_score: awayScore,
+          predicted_winner: winner,
+          points: 0,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'pool_id,user_id,match_id',
+          ignoreDuplicates: false,
+        }
       )
       .select()
       .single();
 
-    if (error) {
-      console.error('Database error:', error);
+    if (upsertError || !rawData) {
+      console.error('[predictions POST] upsert error:', upsertError);
       return NextResponse.json(
-        { error: 'Failed to save prediction. Please try again.' },
+        { error: 'Failed to save prediction' },
         { status: 500 }
       );
     }
 
+    const data = rawData as Prediction;
+
     return NextResponse.json(
-      {
-        success: true,
-        message: 'Prediction saved successfully',
-        data
-      },
+      { success: true, message: 'Prediction saved', data },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Prediction error:', error);
-    return NextResponse.json(
-      { error: 'An unexpected error occurred. Please try again.' },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error('[predictions POST] unexpected error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function GET(req: NextRequest) {
+// ── GET — fetch current user's predictions for a pool ────────────────────────
+
+export async function GET(
+  req: NextRequest
+): Promise<NextResponse<Prediction[] | { error: string }>> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -182,31 +194,31 @@ export async function GET(req: NextRequest) {
     const poolId = searchParams.get('poolId');
 
     if (!poolId) {
-      return NextResponse.json(
-        { error: 'Pool ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'poolId is required' }, { status: 400 });
     }
 
     const supabase = supabaseServer();
-    const { data, error } = await supabase
+
+    const { data: rawData, error } = await supabase
       .from('predictions')
       .select('*')
       .eq('pool_id', poolId)
-      .eq('user_id', session.user.id);
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false });
 
     if (error) {
+      console.error('[predictions GET] error:', error);
       return NextResponse.json(
         { error: 'Failed to fetch predictions' },
         { status: 500 }
       );
     }
 
+    const data = (rawData ?? []) as Prediction[];
+
     return NextResponse.json(data);
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error('[predictions GET] unexpected error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
