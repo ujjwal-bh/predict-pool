@@ -49,7 +49,7 @@ function scorePrediction(
       (pred.predicted_winner === 'draw' && home_score === away_score));
 
   return {
-    points: isExact ? 2 : isCorrectWinner ? 1 : 0,
+    points: isExact ? 5 : isCorrectWinner ? 3 : 0,
     isExact,
     isCorrectWinner,
   };
@@ -146,8 +146,8 @@ export async function GET(
 
         const { points, isExact, isCorrectWinner } = scorePrediction(pred, match);
         totalPoints += points;
-        if (isExact) correctPredictions += 2;
-        if (isCorrectWinner) correctWinners += 3;
+        if (isExact) correctPredictions += 1;
+        if (isCorrectWinner) correctWinners += 1;
       }
 
       return {
