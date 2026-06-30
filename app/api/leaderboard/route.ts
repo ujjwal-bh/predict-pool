@@ -146,8 +146,8 @@ export async function GET(
 
         const { points, isExact, isCorrectWinner } = scorePrediction(pred, match);
         totalPoints += points;
-        if (isExact) correctPredictions += 1;
-        if (isCorrectWinner) correctWinners += 1;
+        if (isExact) correctPredictions += 2;
+        if (isCorrectWinner) correctWinners += 3;
       }
 
       return {
