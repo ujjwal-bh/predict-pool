@@ -73,14 +73,14 @@ export async function GET(req: Request) {
 
         // Only calculate if match has scores
         if (match.home_score !== null && match.away_score !== null) {
-          // Check if exact score is correct (2 points)
+          // Check if exact score is correct (5 points)
           if (
             pred.predicted_home_score === match.home_score &&
             pred.predicted_away_score === match.away_score
           ) {
-            points = 2;
+            points = 5;
           } else {
-            // Check if winner is correct (1 point)
+            // Check if winner is correct (3 points)
             const actualWinner =
               match.home_score > match.away_score
                 ? 'home'
@@ -89,7 +89,7 @@ export async function GET(req: Request) {
                 : 'draw';
 
             if (pred.predicted_winner === actualWinner) {
-              points = 1;
+              points = 3;
             }
           }
 

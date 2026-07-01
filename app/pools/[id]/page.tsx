@@ -509,18 +509,18 @@ export default function PoolDetailPage() {
                     {completedMatches.map((m: any) => {
                       const pred = predictions.get(m.id);
                       const getStatusLabel = (prediction: any, match: any) => {
-                        if (!prediction) return null;
+                        if (!prediction) return 'Incorrect';
 
-                        if (prediction.points === 2) return 'Exact';
-                        if (prediction.points === 1) return 'Correct';
-                        return null;
+                        if (prediction.points === 5) return 'Exact';
+                        if (prediction.points === 3) return 'Correct';
+                        return 'Incorrect';
                       };
 
                       const getStatusColor = (prediction: any, match: any) => {
-                        if (!prediction) return 'bg-slate-400';
+                        if (!prediction) return 'bg-red-700';
 
-                        if (prediction.points === 2) return 'bg-green-700';
-                        if (prediction.points === 1) return 'bg-blue-700';
+                        if (prediction.points === 5) return 'bg-green-700';
+                        if (prediction.points === 3) return 'bg-blue-700';
                         return 'bg-red-700';
                       };
 
