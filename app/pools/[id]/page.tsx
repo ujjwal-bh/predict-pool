@@ -265,85 +265,86 @@ export default function PoolDetailPage() {
           )}
 
           {/* Hero section */}
-          <div className="mb-12 p-4 rounded-lg text-white">
-            <div className="flex items-start justify-between gap-8 mb-6">
-              <div className="flex-1">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                  Prediction Pool
-                </p>
-                <h1 className="text-4xl font-bold text-slate-900 mb-3">{pool.name}</h1>
-                {pool.description && (
-                  <p className="text-base text-slate-600 max-w-lg">{pool.description}</p>
-                )}
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-4xl font-bold text-slate-900">{pool.pool_members?.length || 0}</p>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-1">Members</p>
-              </div>
-            </div>
+          {/* Hero section */}
+<div className="mb-12 p-8 rounded-lg bg-slate-900">
+  <div className="flex items-start justify-between gap-8 mb-6">
+    <div className="flex-1">
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+        Prediction Pool
+      </p>
+      <h1 className="text-4xl font-bold text-white mb-3">{pool.name}</h1>
+      {pool.description && (
+        <p className="text-base text-slate-300 max-w-lg">{pool.description}</p>
+      )}
+    </div>
+    <div className="text-right shrink-0">
+      <p className="text-4xl font-bold text-white">{pool.pool_members?.length || 0}</p>
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-1">Members</p>
+    </div>
+  </div>
 
-            {/* Invite code section */}
-            {!pool.is_public && (
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Invite Code</p>
-                    <p className="text-xs text-slate-500 mt-1">Share with friends to join</p>
-                  </div>
-                  <button
-                    onClick={handleCopyCode}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                      copySuccess
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                  >
-                    {copySuccess ? (
-                      <>
-                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <rect x="9" y="9" width="13" height="13" rx="2" />
-                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                        </svg>
-                        {pool.join_code}
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
+  {/* Invite code section */}
+  {!pool.is_public && (
+    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 mb-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-sm font-semibold text-white">Invite Code</p>
+          <p className="text-xs text-slate-400 mt-1">Share with friends to join</p>
+        </div>
+        <button
+          onClick={handleCopyCode}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            copySuccess
+              ? 'bg-green-500/20 text-green-400'
+              : 'bg-blue-500 text-white hover:bg-blue-400'
+          }`}
+        >
+          {copySuccess ? (
+            <>
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              Copied!
+            </>
+          ) : (
+            <>
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <rect x="9" y="9" width="13" height="13" rx="2" />
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+              </svg>
+              {pool.join_code}
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  )}
 
-            {/* Action buttons */}
-            <div className="flex gap-3">
-              <Link
-                href={`/pools/${params.id}/predictions`}
-                className="px-4 py-2 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
-              >
-                View All Predictions
-              </Link>
-              {isCreator ? (
-                <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="px-4 py-2 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
-                >
-                  Delete Pool
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowLeaveModal(true)}
-                  className="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 transition-colors"
-                >
-                  Leave Pool
-                </button>
-              )}
-            </div>
-          </div>
+  {/* Action buttons */}
+  <div className="flex gap-3">
+    <Link
+      href={`/pools/${params.id}/predictions`}
+      className="px-4 py-2 text-sm font-semibold text-blue-300 bg-blue-500/10 border border-blue-500/30 rounded-lg hover:bg-blue-500/20 transition-colors"
+    >
+      View All Predictions
+    </Link>
+    {isCreator ? (
+      <button
+        onClick={() => setShowDeleteModal(true)}
+        className="px-4 py-2 text-sm font-semibold text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors"
+      >
+        Delete Pool
+      </button>
+    ) : (
+      <button
+        onClick={() => setShowLeaveModal(true)}
+        className="px-4 py-2 text-sm font-semibold text-slate-300 bg-slate-700/50 border border-slate-600 rounded-lg hover:bg-slate-700 transition-colors"
+      >
+        Leave Pool
+      </button>
+    )}
+  </div>
+</div>
 
  <div className="md:hidden mb-12">
               <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">

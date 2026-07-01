@@ -104,7 +104,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
               { emoji: '5️⃣', pts: '5 Points', label: 'Exact Score Match' },
-              { emoji: '3️⃣', pts: '1 Point',  label: 'Correct Winner' },
+              { emoji: '3️⃣', pts: '3 Points',  label: 'Correct Winner' },
               { emoji: '0️⃣', pts: '0 Points', label: 'Incorrect Prediction' },
             ].map(({ emoji, pts, label }) => (
               <div key={label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-center border border-white/20">
