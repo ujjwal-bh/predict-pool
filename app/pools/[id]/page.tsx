@@ -508,19 +508,48 @@ export default function PoolDetailPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {completedMatches.map((m: any) => {
                       const pred = predictions.get(m.id);
+
                       const getStatusLabel = (prediction: any, match: any) => {
                         if (!prediction) return 'Incorrect';
 
-                        if (prediction.points === 5) return 'Exact';
-                        if (prediction.points === 3) return 'Correct';
+                        const isExact =
+                          prediction.predicted_home_score === match.home_score &&
+                          prediction.predicted_away_score === match.away_score;
+
+                        if (isExact) return 'Exact';
+
+                        const actualWinner =
+                          match.home_score > match.away_score
+                            ? 'home'
+                            : match.away_score > match.home_score
+                            ? 'away'
+                            : 'draw';
+
+                        const isCorrect = prediction.predicted_winner === actualWinner;
+                        if (isCorrect) return 'Correct';
+
                         return 'Incorrect';
                       };
 
                       const getStatusColor = (prediction: any, match: any) => {
                         if (!prediction) return 'bg-red-700';
 
-                        if (prediction.points === 5) return 'bg-green-700';
-                        if (prediction.points === 3) return 'bg-blue-700';
+                        const isExact =
+                          prediction.predicted_home_score === match.home_score &&
+                          prediction.predicted_away_score === match.away_score;
+
+                        if (isExact) return 'bg-green-700';
+
+                        const actualWinner =
+                          match.home_score > match.away_score
+                            ? 'home'
+                            : match.away_score > match.home_score
+                            ? 'away'
+                            : 'draw';
+
+                        const isCorrect = prediction.predicted_winner === actualWinner;
+                        if (isCorrect) return 'bg-blue-700';
+
                         return 'bg-red-700';
                       };
 

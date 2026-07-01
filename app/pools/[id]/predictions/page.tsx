@@ -108,8 +108,8 @@ export default function PoolPredictionsPage() {
   }, [params.id]);
 
   const getPredictionStatus = (pred: PredictionEntry) => {
-    if (pred.points === 5) return { label: 'Exact', color: 'bg-green-100 text-green-800 border-green-300' };
-    if (pred.points === 3) return { label: 'Correct', color: 'bg-blue-100 text-blue-800 border-blue-300' };
+    if (pred.is_exact) return { label: 'Exact', color: 'bg-green-100 text-green-800 border-green-300' };
+    if (pred.is_correct) return { label: 'Correct', color: 'bg-blue-100 text-blue-800 border-blue-300' };
     return { label: 'Incorrect', color: 'bg-red-100 text-red-800 border-red-300' };
   };
 
