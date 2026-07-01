@@ -66,6 +66,16 @@ export interface Prediction {
   updated_at: string;
 }
 
+export interface WorldCupPrediction {
+  id: string;
+  pool_id: string;
+  user_id: string;
+  predicted_country: string;
+  points: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // ─────────────────────────────────────────────
 // Joined / enriched types (used in API responses)
 // ─────────────────────────────────────────────

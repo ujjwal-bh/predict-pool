@@ -1,5 +1,5 @@
 {
-    "builder.serverUrl": "",
+    "builder.serverUrl": "http://localhost:3000",
     "builder.command": "pnpm run dev",
     "builder.runDevServer": true,
     "builder.autoDetectDevServer": true,

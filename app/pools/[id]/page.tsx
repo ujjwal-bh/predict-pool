@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/app/components/header';
 import { MatchPredictionCard } from '@/app/components/match-prediction-card';
+import { WorldCupSelector } from '@/app/components/world-cup-selector';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -263,7 +264,7 @@ export default function PoolDetailPage() {
           )}
 
           {/* Hero section */}
-          <div className="mb-12">
+          <div className="mb-12 p-4 rounded-lg text-white">
             <div className="flex items-start justify-between gap-8 mb-6">
               <div className="flex-1">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
@@ -389,6 +390,11 @@ export default function PoolDetailPage() {
                 </div>
               )}
             </div>
+          {/* World Cup Prediction Section */}
+          <div className="mb-12">
+            <WorldCupSelector poolId={params.id as string} />
+          </div>
+
           {/* Main content area */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Matches */}
