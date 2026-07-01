@@ -274,7 +274,7 @@ export default function PoolDetailPage() {
                   <p className="text-base text-slate-600 max-w-lg">{pool.description}</p>
                 )}
               </div>
-              <div className="text-right flex-shrink-0">
+              <div className="text-right shrink-0">
                 <p className="text-4xl font-bold text-slate-900">{pool.pool_members?.length || 0}</p>
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-1">Members</p>
               </div>
@@ -337,6 +337,58 @@ export default function PoolDetailPage() {
             </div>
           </div>
 
+ <div className="md:hidden mb-12">
+              <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                🏆 Leaderboard
+              </h2>
+
+              {leaderboardLoading ? (
+                <Spinner label="Loading standings…" />
+              ) : leaderboard.length === 0 ? (
+                <div className="bg-slate-50 rounded-lg p-8 text-center border border-slate-200">
+                  <p className="text-xl mb-2">📊</p>
+                  <p className="font-semibold text-slate-900 mb-1">No standings yet</p>
+                  <p className="text-sm text-slate-600">Appears once members predict</p>
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                  <div className="grid grid-cols-12 gap-2 bg-slate-50 px-4 py-3 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <div className="col-span-2">#</div>
+                    <div className="col-span-7">Player</div>
+                    <div className="col-span-3 text-right">Pts</div>
+                  </div>
+                  {leaderboard.map((e: any, i: number) => (
+                    <div
+                      key={e.userId}
+                      className={`grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-100 items-center transition-colors ${
+                        e.userId === session?.user?.id ? 'bg-blue-50' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="col-span-2 text-sm font-bold">
+                        {i === 0 && '🥇'}
+                        {i === 1 && '🥈'}
+                        {i === 2 && '🥉'}
+                        {i > 2 && <span className="text-slate-600">#{i + 1}</span>}
+                      </div>
+                      <div className="col-span-7 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">
+                          {e.name}
+                          {e.userId === session?.user?.id && (
+                            <span className="ml-2 text-xs font-bold bg-blue-200 text-blue-800 px-2 py-0.5 rounded inline">
+                              you
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">{e.email}</p>
+                      </div>
+                      <div className="col-span-3 text-right text-sm font-bold text-blue-600">
+                        {e.totalPoints}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           {/* Main content area */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Matches */}
@@ -415,12 +467,12 @@ export default function PoolDetailPage() {
                 ) : (
                   <>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex gap-3">
-                      <span className="text-lg flex-shrink-0">💡</span>
+                      <span className="text-lg shrink-0">💡</span>
                       <p className="text-sm text-blue-900">
                         <strong>How to predict:</strong> Use + / − to set scores and hit Save. Edit any time before kick-off.
                       </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {upcomingMatches.map((m: any) => (
                         <MatchPredictionCard
                           key={m.id}
@@ -486,7 +538,7 @@ export default function PoolDetailPage() {
             </div>
 
             {/* Leaderboard */}
-            <div className="lg:col-span-1">
+            <div className="hidden md:block lg:col-span-1">
               <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 🏆 Leaderboard
               </h2>
