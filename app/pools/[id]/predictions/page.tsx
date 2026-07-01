@@ -107,9 +107,25 @@ export default function PoolPredictionsPage() {
     fetchWorldCupPredictions();
   }, [params.id]);
 
-  const getPredictionStatus = (pred: PredictionEntry) => {
-    if (pred.is_exact) return { label: 'Exact', color: 'bg-green-100 text-green-800 border-green-300' };
-    if (pred.is_correct) return { label: 'Correct', color: 'bg-blue-100 text-blue-800 border-blue-300' };
+  const getPredictionStatus = (pred: PredictionEntry, match?: any) => {
+    if (match && match.home_score !== null && match.away_score !== null) {
+      const isExact =
+        pred.predicted_home_score === match.home_score &&
+        pred.predicted_away_score === match.away_score;
+
+      if (isExact) return { label: 'Exact', color: 'bg-green-100 text-green-800 border-green-300' };
+
+      const actualWinner =
+        match.home_score > match.away_score
+          ? 'home'
+          : match.away_score > match.home_score
+          ? 'away'
+          : 'draw';
+
+      const isCorrect = pred.predicted_winner === actualWinner;
+      if (isCorrect) return { label: 'Correct', color: 'bg-blue-100 text-blue-800 border-blue-300' };
+    }
+
     return { label: 'Incorrect', color: 'bg-red-100 text-red-800 border-red-300' };
   };
 
@@ -521,7 +537,6 @@ export default function PoolPredictionsPage() {
                         </div>
                       ) : (
                         sortedPreds.map((pred) => {
-                          const status = getPredictionStatus(pred);
                           const isCurrentUser = session?.user?.id === pred.user_id;
 
                           return (
@@ -555,9 +570,9 @@ export default function PoolPredictionsPage() {
                               {isCompleted && (
                                 <div className="flex items-center gap-3">
                                   <span
-                                    className={`text-xs font-bold px-3 py-1.5 rounded border ${status.color}`}
+                                    className={`text-xs font-bold px-3 py-1.5 rounded border ${getPredictionStatus(pred, match).color}`}
                                   >
-                                    {status.label}
+                                    {getPredictionStatus(pred, match).label}
                                   </span>
                                   <div className="text-right w-16">
                                     <p className="text-sm font-bold text-blue-600">
