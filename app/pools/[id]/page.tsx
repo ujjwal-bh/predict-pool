@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/app/components/header';
@@ -47,260 +47,6 @@ interface Prediction {
   predicted_winner: string;
 }
 
-const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap');
-
-  .pd { font-family: 'Inter', sans-serif; background: #F2F4F8; min-height: 100vh; color: #0D0F14; }
-  .pd *, .pd *::before, .pd *::after { box-sizing: border-box; }
-
-  /* ── Layout shell ── */
-  .pd-wrap { max-width: 1280px; margin: 0 auto; padding: 0 20px 80px; }
-
-  /* ── Back link ── */
-  .pd-back {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 13px; font-weight: 600; color: #5A5F72;
-    text-decoration: none; padding: 28px 0 20px; letter-spacing: .02em;
-    transition: color .15s;
-  }
-  .pd-back:hover { color: #2563EB; }
-  .pd-back svg { transition: transform .15s; }
-  .pd-back:hover svg { transform: translateX(-3px); }
-
-  /* ── Error banner ── */
-  .pd-error {
-    background: #FEF2F2; border: 1px solid #FECACA; border-radius: 10px;
-    padding: 12px 16px; font-size: 13px; font-weight: 500; color: #B91C1C;
-    margin-bottom: 16px;
-  }
-
-  /* ════════════════════════════════
-     HERO CARD
-  ════════════════════════════════ */
-  .pd-hero {
-    background: #0D0F14; border-radius: 20px; padding: 36px 40px;
-    margin-bottom: 32px; position: relative; overflow: hidden;
-  }
-  .pd-hero::after {
-    content: ''; position: absolute;
-    top: -80px; right: -80px; width: 360px; height: 360px;
-    background: radial-gradient(circle, rgba(37,99,235,.3) 0%, transparent 65%);
-    pointer-events: none;
-  }
-  .pd-hero-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-  .pd-hero-eyebrow {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
-    color: rgba(255,255,255,.35); margin-bottom: 8px;
-  }
-  .pd-hero-title {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: clamp(30px, 5vw, 52px); font-weight: 900; line-height: 1;
-    color: #fff; letter-spacing: -.5px; margin: 0 0 10px;
-  }
-  .pd-hero-desc { font-size: 14px; color: rgba(255,255,255,.45); margin: 0; line-height: 1.6; max-width: 480px; }
-  .pd-hero-stat { text-align: right; flex-shrink: 0; }
-  .pd-hero-num {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: clamp(40px, 6vw, 60px); font-weight: 900; line-height: 1; color: #fff;
-  }
-  .pd-hero-num-label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.35); margin-top: 4px; }
-
-  /* invite strip */
-  .pd-invite {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    flex-wrap: wrap; background: rgba(37,99,235,.14); border: 1px solid rgba(37,99,235,.28);
-    border-radius: 12px; padding: 14px 18px; margin-top: 24px;
-  }
-  .pd-invite-label { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.85); }
-  .pd-invite-sub { font-size: 12px; color: rgba(255,255,255,.35); margin-top: 2px; }
-  .pd-invite-btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: #2563EB; color: #fff; border: none; border-radius: 8px;
-    padding: 9px 16px; font-size: 13px; font-weight: 700; letter-spacing: .03em;
-    cursor: pointer; transition: background .15s, transform .1s; white-space: nowrap;
-  }
-  .pd-invite-btn:hover { background: #1D4ED8; transform: translateY(-1px); }
-  .pd-invite-btn.ok { background: #10B981; }
-
-  /* hero actions */
-  .pd-hero-actions { display: flex; gap: 10px; margin-top: 24px; }
-  .pd-hbtn {
-    border: none; cursor: pointer; border-radius: 8px; padding: 9px 16px;
-    font-size: 13px; font-weight: 600; transition: all .15s;
-  }
-  .pd-hbtn.del { background: rgba(239,68,68,.12); color: #FC8181; border: 1px solid rgba(239,68,68,.2); }
-  .pd-hbtn.del:hover { background: rgba(239,68,68,.22); }
-  .pd-hbtn.leave { background: rgba(255,255,255,.08); color: rgba(255,255,255,.6); border: 1px solid rgba(255,255,255,.1); }
-  .pd-hbtn.leave:hover { background: rgba(255,255,255,.14); }
-
-  /* ════════════════════════════════
-     BODY: matches + sidebar
-  ════════════════════════════════ */
-  .pd-body { display: flex; gap: 24px; align-items: flex-start; }
-  .pd-main { flex: 1; min-width: 0; }
-  .pd-aside { width: 300px; flex-shrink: 0; position: sticky; top: 24px; }
-
-  /* ════════════════════════════════
-     TABS
-  ════════════════════════════════ */
-  .pd-tabs {
-    display: flex; gap: 2px; background: #E2E5ED;
-    border-radius: 12px; padding: 4px; margin-bottom: 24px;
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .pd-tabs::-webkit-scrollbar { display: none; }
-  .pd-tab {
-    flex: 1; min-width: max-content;
-    display: flex; align-items: center; justify-content: center; gap: 7px;
-    border: none; background: transparent; cursor: pointer;
-    border-radius: 9px; padding: 10px 18px;
-    font-size: 13px; font-weight: 600; color: #5A5F72;
-    transition: all .18s; white-space: nowrap;
-  }
-  .pd-tab:hover { color: #0D0F14; }
-  .pd-tab-pill {
-    border-radius: 20px; padding: 2px 8px;
-    font-size: 11px; font-weight: 700;
-    background: rgba(0,0,0,.08); color: inherit;
-  }
-  .pd-tab.on { background: #fff; color: #0D0F14; box-shadow: 0 1px 6px rgba(0,0,0,.10); }
-  .pd-tab.on.live-t { color: #EF4444; }
-  .pd-tab.on.live-t .pd-tab-pill { background: #FEE2E2; color: #EF4444; }
-  .pd-tab.on.up-t   { color: #2563EB; }
-  .pd-tab.on.up-t   .pd-tab-pill { background: #DBEAFE; color: #2563EB; }
-  .pd-tab.on.done-t { color: #10B981; }
-  .pd-tab.on.done-t .pd-tab-pill { background: #D1FAE5; color: #10B981; }
-
-  /* ── Tip banner ── */
-  .pd-tip {
-    display: flex; gap: 10px; align-items: flex-start;
-    background: #EFF6FF; border: 1px solid #BFDBFE;
-    border-radius: 10px; padding: 12px 14px; margin-bottom: 20px;
-    font-size: 13px; color: #1E40AF; line-height: 1.5;
-  }
-
-  /* ════════════════════════════════
-     MATCH GRID
-  ════════════════════════════════ */
-  .pd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
-
-  /* ── Live card ── */
-  .pd-live-card { background: #fff; border-radius: 14px; border: 1.5px solid #FCA5A5; overflow: hidden; box-shadow: 0 0 0 4px rgba(239,68,68,.06); }
-  .pd-live-hd { background: #EF4444; padding: 8px 14px; display: flex; align-items: center; gap: 6px; }
-  .pd-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: lp 1.2s ease-in-out infinite; }
-  @keyframes lp { 0%,100%{opacity:1} 50%{opacity:.35} }
-  .pd-live-hd-txt { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #fff; }
-  .pd-live-body { padding: 18px 16px; }
-  .pd-live-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; }
-  .pd-live-name { font-size: 14px; font-weight: 700; color: #0D0F14; }
-  .pd-live-score { font-family: 'Barlow Condensed', sans-serif; font-size: 34px; font-weight: 900; color: #0D0F14; line-height: 1; }
-  .pd-live-sep { text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #9297A8; padding: 4px 0; }
-  .pd-live-time { text-align: center; font-size: 11px; color: #9297A8; margin-top: 10px; padding-top: 10px; border-top: 1px solid #F0F2F7; }
-
-  /* ── Completed card ── */
-  .pd-done-card { background: #fff; border-radius: 14px; border: 1px solid #E8EAF0; overflow: hidden; transition: box-shadow .15s, transform .15s; }
-  .pd-done-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.08); transform: translateY(-2px); }
-  .pd-done-hd { background: #F0FDF4; padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #D1FAE5; }
-  .pd-done-stage { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #059669; }
-  .pd-done-badge { font-size: 10px; font-weight: 700; background: #10B981; color: #fff; border-radius: 4px; padding: 2px 7px; }
-  .pd-done-body { padding: 16px 14px; }
-  .pd-done-row { display: flex; align-items: center; justify-content: space-between; }
-  .pd-done-name { font-size: 14px; font-weight: 700; color: #0D0F14; }
-  .pd-done-score { font-family: 'Barlow Condensed', sans-serif; font-size: 30px; font-weight: 900; color: #0D0F14; line-height: 1; }
-  .pd-done-sep { text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #9297A8; padding: 5px 0; }
-  .pd-done-ft { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid #F0F2F7; }
-  .pd-done-time { font-size: 11px; color: #9297A8; }
-  .pd-pred-pill { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 700; color: #2563EB; }
-  .pd-match-label { text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #9297A8; margin-top: 7px; }
-
-  /* ════════════════════════════════
-     EMPTY STATE
-  ════════════════════════════════ */
-  .pd-empty { background: #fff; border: 1px solid #E8EAF0; border-radius: 14px; padding: 48px 24px; text-align: center; }
-  .pd-empty-ico { font-size: 34px; margin-bottom: 10px; }
-  .pd-empty-msg { font-size: 15px; font-weight: 700; color: #0D0F14; margin-bottom: 4px; }
-  .pd-empty-sub { font-size: 13px; color: #9297A8; }
-
-  /* ════════════════════════════════
-     SPINNER
-  ════════════════════════════════ */
-  .pd-spin { display: flex; flex-direction: column; align-items: center; padding: 56px 0; gap: 12px; }
-  .pd-spin-ring { width: 32px; height: 32px; border: 3px solid #E8EAF0; border-top-color: #2563EB; border-radius: 50%; animation: spin .7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .pd-spin-txt { font-size: 13px; color: #9297A8; font-weight: 500; }
-
-  /* ════════════════════════════════
-     LEADERBOARD SIDEBAR
-  ════════════════════════════════ */
-  .pd-lb-title {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 22px; font-weight: 900; color: #0D0F14;
-    letter-spacing: -.3px; margin-bottom: 14px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .pd-lb-card { background: #fff; border: 1px solid #E8EAF0; border-radius: 16px; overflow: hidden; }
-  .pd-lb-head { background: #0D0F14; padding: 12px 16px; display: grid; grid-template-columns: 40px 1fr 48px; gap: 8px; }
-  .pd-lb-hcol { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.35); }
-  .pd-lb-hcol.r { text-align: right; }
-  .pd-lb-row {
-    display: grid; grid-template-columns: 40px 1fr 48px; gap: 8px;
-    padding: 11px 16px; border-bottom: 1px solid #F0F2F7;
-    align-items: center; transition: background .12s;
-  }
-  .pd-lb-row:last-child { border-bottom: none; }
-  .pd-lb-row:hover { background: #F8F9FC; }
-  .pd-lb-row.me { background: #EFF6FF; }
-  .pd-lb-row.me:hover { background: #DBEAFE; }
-  .pd-lb-rank { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 900; color: #0D0F14; }
-  .pd-lb-medal { font-size: 18px; }
-  .pd-lb-name { font-size: 13px; font-weight: 700; color: #0D0F14; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pd-lb-you { font-size: 10px; font-weight: 600; color: #2563EB; background: #DBEAFE; border-radius: 4px; padding: 1px 5px; display: inline-block; margin-left: 4px; vertical-align: middle; }
-  .pd-lb-email { font-size: 11px; color: #9297A8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pd-lb-pts { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: #2563EB; text-align: right; }
-
-  /* mobile: leaderboard moves below matches */
-  @media (max-width: 900px) {
-    .pd-body { flex-direction: column; }
-    .pd-aside { width: 100%; position: static; }
-    .pd-lb-card-wrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0; }
-  }
-
-  /* ════════════════════════════════
-     MODALS
-  ════════════════════════════════ */
-  .pd-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,.55);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 50; padding: 16px; backdrop-filter: blur(4px);
-  }
-  .pd-modal { background: #fff; border-radius: 20px; max-width: 400px; width: 100%; padding: 32px; box-shadow: 0 24px 64px rgba(0,0,0,.18); }
-  .pd-modal-ico { font-size: 38px; margin-bottom: 14px; }
-  .pd-modal-title { font-size: 21px; font-weight: 800; color: #0D0F14; margin: 0 0 8px; }
-  .pd-modal-body { font-size: 14px; color: #5A5F72; line-height: 1.6; margin-bottom: 26px; }
-  .pd-modal-row { display: flex; gap: 10px; }
-  .pd-mbtn {
-    flex: 1; border-radius: 10px; padding: 12px; font-size: 14px;
-    font-weight: 700; cursor: pointer; transition: all .15s; border: none;
-  }
-  .pd-mbtn.cancel { background: #F2F4F8; color: #0D0F14; border: 1.5px solid #E8EAF0; }
-  .pd-mbtn.cancel:hover { background: #E8EAF0; }
-  .pd-mbtn.red { background: #EF4444; color: #fff; }
-  .pd-mbtn.red:hover { background: #DC2626; }
-  .pd-mbtn.red:disabled { background: #FCA5A5; cursor: not-allowed; }
-  .pd-mbtn.blue { background: #2563EB; color: #fff; }
-  .pd-mbtn.blue:hover { background: #1D4ED8; }
-  .pd-mbtn.blue:disabled { background: #93C5FD; cursor: not-allowed; }
-
-  @media (max-width: 520px) {
-    .pd-hero { padding: 24px 20px; }
-    .pd-wrap { padding: 0 14px 60px; }
-    .pd-tabs { gap: 1px; }
-    .pd-tab { padding: 9px 12px; font-size: 12px; }
-  }
-`;
-
 export default function PoolDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -325,8 +71,11 @@ export default function PoolDetailPage() {
         const res = await fetch(`/api/pools?id=${params.id}`);
         if (!res.ok) throw new Error('Pool not found');
         setPool(await res.json());
-      } catch (err) { setError((err as Error).message); }
-      finally { setLoading(false); }
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchPool();
   }, [params.id]);
@@ -339,8 +88,11 @@ export default function PoolDetailPage() {
         if (!res.ok) throw new Error('Failed to fetch matches');
         const data = await res.json();
         setMatches(data.sort((a: Match, b: Match) => +new Date(a.match_date) - +new Date(b.match_date)));
-      } catch (err) { console.error(err); }
-      finally { setMatchesLoading(false); }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setMatchesLoading(false);
+      }
     };
     fetchMatches();
   }, []);
@@ -353,7 +105,9 @@ export default function PoolDetailPage() {
         if (!res.ok) throw new Error('Failed to fetch predictions');
         const data: Prediction[] = await res.json();
         setPredictions(new Map(data.map((p: any) => [p.match_id, p])));
-      } catch (err) { console.error(err); }
+      } catch (err) {
+        console.error(err);
+      }
     };
     fetchPredictions();
   }, [params.id, session?.user?.id]);
@@ -366,8 +120,12 @@ export default function PoolDetailPage() {
         const res = await fetch(`/api/leaderboard?poolId=${params.id}`);
         if (!res.ok) throw new Error('Failed to fetch leaderboard');
         setLeaderboard(await res.json());
-      } catch (err) { console.error(err); setLeaderboard([]); }
-      finally { setLeaderboardLoading(false); }
+      } catch (err) {
+        console.error(err);
+        setLeaderboard([]);
+      } finally {
+        setLeaderboardLoading(false);
+      }
     };
     fetchLeaderboard();
   }, [params.id]);
@@ -385,8 +143,12 @@ export default function PoolDetailPage() {
       const res = await fetch(`/api/pools/${params.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).error);
       router.push('/dashboard');
-    } catch (err) { setError((err as Error).message); setShowDeleteModal(false); }
-    finally { setActionLoading(false); }
+    } catch (err) {
+      setError((err as Error).message);
+      setShowDeleteModal(false);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleLeavePool = async () => {
@@ -395,8 +157,12 @@ export default function PoolDetailPage() {
       const res = await fetch(`/api/pools/${params.id}/leave`, { method: 'POST' });
       if (!res.ok) throw new Error((await res.json()).error);
       router.push('/dashboard');
-    } catch (err) { setError((err as Error).message); setShowLeaveModal(false); }
-    finally { setActionLoading(false); }
+    } catch (err) {
+      setError((err as Error).message);
+      setShowLeaveModal(false);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handlePredictionSubmit = async (
@@ -413,237 +179,438 @@ export default function PoolDetailPage() {
       const data = await res.json();
       predictions.set(matchId, data);
       setPredictions(new Map(predictions));
-    } catch (err) { setError((err as Error).message); }
+    } catch (err) {
+      setError((err as Error).message);
+    }
   };
 
   const isCreator = session?.user?.id === pool?.creator_id;
   const now = new Date();
-  const liveMatches    = matches.filter(m => m.status === 'pending' && new Date(m.match_date) <= now).sort((a,b) => +new Date(a.match_date) - +new Date(b.match_date));
-  const upcomingMatches = matches.filter(m => m.status === 'pending' && new Date(m.match_date) > now).sort((a,b) => +new Date(a.match_date) - +new Date(b.match_date));
-  const completedMatches = matches.filter(m => m.status === 'completed').sort((a,b) => +new Date(b.match_date) - +new Date(a.match_date));
+  const liveMatches = matches
+    .filter(m => m.status === 'pending' && new Date(m.match_date) <= now)
+    .sort((a, b) => +new Date(a.match_date) - +new Date(b.match_date));
+  const upcomingMatches = matches
+    .filter(m => m.status === 'pending' && new Date(m.match_date) > now)
+    .sort((a, b) => +new Date(a.match_date) - +new Date(b.match_date));
+  const completedMatches = matches
+    .filter(m => m.status === 'completed')
+    .sort((a, b) => +new Date(b.match_date) - +new Date(a.match_date));
 
   const Spinner = ({ label }: { label: string }) => (
-    <div className="pd-spin"><div className="pd-spin-ring" /><p className="pd-spin-txt">{label}</p></div>
+    <div className="flex flex-col items-center justify-center py-16 gap-3">
+      <div className="w-8 h-8 border-3 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
+      <p className="text-sm text-slate-500">{label}</p>
+    </div>
   );
 
-  if (loading) return (
-    <><style>{CSS}</style><Header />
-      <div className="pd"><div className="pd-wrap"><Spinner label="Loading pool…" /></div></div>
-    </>
-  );
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Spinner label="Loading pool…" />
+          </div>
+        </div>
+      </>
+    );
+  }
 
-  if (error || !pool) return (
-    <><style>{CSS}</style><Header />
-      <div className="pd"><div className="pd-wrap">
-        <Link href="/dashboard" className="pd-back">
-          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-          Dashboard
-        </Link>
-        <div className="pd-error">{error || 'Pool not found'}</div>
-      </div></div>
-    </>
-  );
-
-  return (
-    <><style>{CSS}</style><Header />
-    <div className="pd">
-      <div className="pd-wrap">
-
-        {/* ── Back ── */}
-        <Link href="/dashboard" className="pd-back">
-          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-          Dashboard
-        </Link>
-
-        {error && <div className="pd-error">{error}</div>}
-
-        {/* ════ HERO ════ */}
-        <div className="pd-hero">
-          <div className="pd-hero-row">
-            <div>
-              <p className="pd-hero-eyebrow">Prediction Pool</p>
-              <h1 className="pd-hero-title">{pool.name}</h1>
-              {pool.description && <p className="pd-hero-desc">{pool.description}</p>}
-            </div>
-            <div className="pd-hero-stat">
-              <div className="pd-hero-num">{pool.pool_members?.length || 0}</div>
-              <div className="pd-hero-num-label">Members</div>
+  if (error || !pool) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 mb-6 transition-colors"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path d="M19 12H5M12 5l-7 7 7 7" />
+              </svg>
+              Dashboard
+            </Link>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+              {error || 'Pool not found'}
             </div>
           </div>
+        </div>
+      </>
+    );
+  }
 
-          {!pool.is_public && (
-            <div className="pd-invite">
-              <div>
-                <div className="pd-invite-label">Invite Code</div>
-                <div className="pd-invite-sub">Share with friends to join</div>
-              </div>
-              <button onClick={handleCopyCode} className={`pd-invite-btn${copySuccess ? ' ok' : ''}`}>
-                {copySuccess
-                  ? <><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Copied!</>
-                  : <><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> {pool.join_code}</>
-                }
-              </button>
+  return (
+    <>
+      <Header />
+      <div className="min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Back button */}
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 mb-8 transition-colors"
+          >
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+            Dashboard
+          </Link>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 mb-6">
+              {error}
             </div>
           )}
 
-          <div className="pd-hero-actions">
-            {isCreator
-              ? <button onClick={() => setShowDeleteModal(true)} className="pd-hbtn del">Delete Pool</button>
-              : <button onClick={() => setShowLeaveModal(true)} className="pd-hbtn leave">Leave Pool</button>
-            }
-          </div>
-        </div>
-
-        {/* ════ BODY: matches + sidebar ════ */}
-        <div className="pd-body">
-
-          {/* ── MAIN: matches ── */}
-          <div className="pd-main">
-            {/* Tabs */}
-            <div className="pd-tabs">
-              {([['live','live-t','Live',liveMatches.length],['upcoming','up-t','Upcoming',upcomingMatches.length],['completed','done-t','Completed',completedMatches.length]] as const).map(([key,cls,label,count]) => (
-                <button key={key} onClick={() => setActiveMatchTab(key)} className={`pd-tab ${cls}${activeMatchTab===key?' on':''}`}>
-                  {label}<span className="pd-tab-pill">{count}</span>
-                </button>
-              ))}
+          {/* Hero section */}
+          <div className="mb-12">
+            <div className="flex items-start justify-between gap-8 mb-6">
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                  Prediction Pool
+                </p>
+                <h1 className="text-4xl font-bold text-slate-900 mb-3">{pool.name}</h1>
+                {pool.description && (
+                  <p className="text-base text-slate-600 max-w-lg">{pool.description}</p>
+                )}
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-4xl font-bold text-slate-900">{pool.pool_members?.length || 0}</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-1">Members</p>
+              </div>
             </div>
 
-            {matchesLoading ? <Spinner label="Loading matches…" /> :
-              activeMatchTab === 'live' ? (
-                liveMatches.length === 0
-                  ? <div className="pd-empty"><div className="pd-empty-ico">📡</div><p className="pd-empty-msg">No live matches</p><p className="pd-empty-sub">Check back when a match is in progress</p></div>
-                  : <div className="pd-grid">
-                      {liveMatches.map((m: any) => (
-                        <div key={m.id} className="pd-live-card">
-                          <div className="pd-live-hd"><span className="pd-live-dot"/><span className="pd-live-hd-txt">Live Now</span></div>
-                          <div className="pd-live-body">
-                            <div className="pd-live-row"><span className="pd-live-name">{m.home_team}</span><span className="pd-live-score">{m.home_score ?? '–'}</span></div>
-                            <div className="pd-live-sep">vs</div>
-                            <div className="pd-live-row"><span className="pd-live-name">{m.away_team}</span><span className="pd-live-score">{m.away_score ?? '–'}</span></div>
-                            <div className="pd-live-time">{new Date(m.match_date).toLocaleString()}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-              ) : activeMatchTab === 'upcoming' ? (
-                upcomingMatches.length === 0
-                  ? <div className="pd-empty"><div className="pd-empty-ico">📅</div><p className="pd-empty-msg">No upcoming matches</p><p className="pd-empty-sub">All matches have started or finished</p></div>
-                  : <>
-                      <div className="pd-tip">
-                        <span style={{flexShrink:0,marginTop:'1px'}}>💡</span>
-                        <span><strong>How to predict:</strong> Use + / − to set scores and hit Save. Edit any time before kick-off.</span>
-                      </div>
-                      <div className="pd-grid">
-                        {upcomingMatches.map((m: any) => (
-                          <div key={m.id}>
-                            <MatchPredictionCard
-                              match={m}
-                              initialPrediction={predictions.get(m.id) as any}
-                              onSubmit={(p: any) => handlePredictionSubmit(m.id, p)}
-                            />
-                            {/* <p className="pd-match-label">{m.group_name || m.stage || 'Other'}</p> */}
-                          </div>
-                        ))}
-                      </div>
-                    </>
+            {/* Invite code section */}
+            {!pool.is_public && (
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Invite Code</p>
+                    <p className="text-xs text-slate-500 mt-1">Share with friends to join</p>
+                  </div>
+                  <button
+                    onClick={handleCopyCode}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      copySuccess
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {copySuccess ? (
+                      <>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <rect x="9" y="9" width="13" height="13" rx="2" />
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                        </svg>
+                        {pool.join_code}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex gap-3">
+              {isCreator ? (
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="px-4 py-2 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                >
+                  Delete Pool
+                </button>
               ) : (
-                completedMatches.length === 0
-                  ? <div className="pd-empty"><div className="pd-empty-ico">✅</div><p className="pd-empty-msg">No completed matches</p><p className="pd-empty-sub">Results will show up here as matches finish</p></div>
-                  : <div className="pd-grid">
-                      {completedMatches.map((m: any) => {
-                        const pred = predictions.get(m.id);
-                        return (
-                          <div key={m.id}>
-                            <div className="pd-done-card">
-                              <div className="pd-done-hd">
-                                <span className="pd-done-stage">{m.group_name || m.stage}</span>
-                                <span className="pd-done-badge">Final</span>
-                              </div>
-                              <div className="pd-done-body">
-                                <div className="pd-done-row"><span className="pd-done-name">{m.home_team}</span><span className="pd-done-score">{m.home_score ?? '–'}</span></div>
-                                <div className="pd-done-sep">vs</div>
-                                <div className="pd-done-row"><span className="pd-done-name">{m.away_team}</span><span className="pd-done-score">{m.away_score ?? '–'}</span></div>
-                              </div>
-                              <div className="pd-done-ft">
-                                <span className="pd-done-time">{new Date(m.match_date).toLocaleDateString()}</span>
-                                {pred && <span className="pd-pred-pill">{pred.predicted_home_score}–{pred.predicted_away_score}</span>}
-                              </div>
-                            </div>
-                            <p className="pd-match-label">{m.group_name || m.stage || 'Other'}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-              )
-            }
+                <button
+                  onClick={() => setShowLeaveModal(true)}
+                  className="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 transition-colors"
+                >
+                  Leave Pool
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* ── ASIDE: leaderboard ── */}
-          <div className="pd-aside">
-            <h2 className="pd-lb-title">🏆 Leaderboard</h2>
-            {leaderboardLoading ? <Spinner label="Loading standings…" /> :
-              leaderboard.length === 0
-                ? <div className="pd-empty"><div className="pd-empty-ico">📊</div><p className="pd-empty-msg">No standings yet</p><p className="pd-empty-sub">Appears once members predict</p></div>
-                : <div className="pd-lb-card">
-                    <div className="pd-lb-head">
-                      <span className="pd-lb-hcol">#</span>
-                      <span className="pd-lb-hcol">Player</span>
-                      <span className="pd-lb-hcol r">Pts</span>
-                    </div>
-                    {leaderboard.map((e: any, i: number) => (
-                      <div key={e.userId} className={`pd-lb-row${e.userId === session?.user?.id ? ' me' : ''}`}>
-                        <span>
-                          {i === 0 && <span className="pd-lb-medal">🥇</span>}
-                          {i === 1 && <span className="pd-lb-medal">🥈</span>}
-                          {i === 2 && <span className="pd-lb-medal">🥉</span>}
-                          {i > 2  && <span className="pd-lb-rank">#{i+1}</span>}
-                        </span>
-                        <div style={{minWidth:0}}>
-                          <div className="pd-lb-name">
-                            {e.name}
-                            {e.userId === session?.user?.id && <span className="pd-lb-you">you</span>}
-                          </div>
-                          <div className="pd-lb-email">{e.email}</div>
+          {/* Main content area */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            {/* Matches */}
+            <div className="lg:col-span-2">
+              {/* Tabs */}
+              <div className="flex gap-2 mb-8 border-b border-slate-200">
+                {(
+                  [
+                    ['live', 'Live', liveMatches.length],
+                    ['upcoming', 'Upcoming', upcomingMatches.length],
+                    ['completed', 'Completed', completedMatches.length],
+                  ] as const
+                ).map(([key, label, count]) => (
+                  <button
+                    key={key}
+                    onClick={() => setActiveMatchTab(key)}
+                    className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                      activeMatchTab === key
+                        ? 'border-blue-600 text-slate-900'
+                        : 'border-transparent text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {label}
+                    <span className="ml-2 text-xs font-medium text-slate-500">
+                      ({count})
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {matchesLoading ? (
+                <Spinner label="Loading matches…" />
+              ) : activeMatchTab === 'live' ? (
+                liveMatches.length === 0 ? (
+                  <div className="bg-slate-50 rounded-lg p-12 text-center border border-slate-200">
+                    <p className="text-2xl mb-3">📡</p>
+                    <p className="font-semibold text-slate-900 mb-1">No live matches</p>
+                    <p className="text-sm text-slate-600">Check back when a match is in progress</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {liveMatches.map((m: any) => (
+                      <div
+                        key={m.id}
+                        className="bg-white border border-red-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="bg-red-50 px-4 py-3 flex items-center gap-2 border-b border-red-200">
+                          <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+                          <span className="text-xs font-semibold text-red-700 uppercase tracking-wider">Live</span>
                         </div>
-                        <div className="pd-lb-pts">{e.totalPoints}</div>
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="font-semibold text-slate-900 text-sm">{m.home_team}</p>
+                            <p className="text-2xl font-bold text-slate-900">{m.home_score ?? '–'}</p>
+                          </div>
+                          <p className="text-center text-xs text-slate-500 font-medium mb-3">vs</p>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="font-semibold text-slate-900 text-sm">{m.away_team}</p>
+                            <p className="text-2xl font-bold text-slate-900">{m.away_score ?? '–'}</p>
+                          </div>
+                          <p className="text-xs text-slate-500 text-center pt-3 border-t border-slate-200">
+                            {new Date(m.match_date).toLocaleString()}
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
-            }
-          </div>
-        </div>
-      </div>
-    </div>
+                )
+              ) : activeMatchTab === 'upcoming' ? (
+                upcomingMatches.length === 0 ? (
+                  <div className="bg-slate-50 rounded-lg p-12 text-center border border-slate-200">
+                    <p className="text-2xl mb-3">📅</p>
+                    <p className="font-semibold text-slate-900 mb-1">No upcoming matches</p>
+                    <p className="text-sm text-slate-600">All matches have started or finished</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex gap-3">
+                      <span className="text-lg flex-shrink-0">💡</span>
+                      <p className="text-sm text-blue-900">
+                        <strong>How to predict:</strong> Use + / − to set scores and hit Save. Edit any time before kick-off.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                      {upcomingMatches.map((m: any) => (
+                        <MatchPredictionCard
+                          key={m.id}
+                          match={m}
+                          initialPrediction={predictions.get(m.id) as any}
+                          onSubmit={(p: any) => handlePredictionSubmit(m.id, p)}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )
+              ) : (
+                completedMatches.length === 0 ? (
+                  <div className="bg-slate-50 rounded-lg p-12 text-center border border-slate-200">
+                    <p className="text-2xl mb-3">✅</p>
+                    <p className="font-semibold text-slate-900 mb-1">No completed matches</p>
+                    <p className="text-sm text-slate-600">Results will show up here as matches finish</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {completedMatches.map((m: any) => {
+                      const pred = predictions.get(m.id);
+                      return (
+                        <div
+                          key={m.id}
+                          className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                        >
+                          <div className="bg-slate-50 px-4 py-3 flex items-center justify-between border-b border-slate-200">
+                            <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                              {m.group_name || m.stage}
+                            </p>
+                            <span className={`text-xs font-bold  text-white px-2.5 py-1 rounded ${(pred &&(pred?.predicted_home_score > pred?.predicted_away_score && m.home_score > m.away_score) || (pred && pred?.predicted_away_score > pred?.predicted_home_score && m.away_score > m.home_score) || (pred && pred?.predicted_home_score === pred?.predicted_away_score && m.home_score === m.away_score)) ? ' bg-green-700' : pred ? 'bg-red-700' : 'bg-slate-400'}`}>
+                              Final
+                            </span>
+                          </div>
+                          <div className="p-4">
+                            <div className="flex items-center justify-between mb-3"> 
+                              <p className="font-semibold text-slate-900 text-sm">{m.home_team}</p>
+                              <p className="text-2xl font-bold text-slate-900">{m.home_score ?? '–'}</p>
+                            </div>
+                            <p className="text-center text-xs text-slate-500 font-medium mb-3">vs</p>
+                            <div className="flex items-center justify-between">
+                              <p className="font-semibold text-slate-900 text-sm">{m.away_team}</p>
+                              <p className="text-2xl font-bold text-slate-900">{m.away_score ?? '–'}</p>
+                            </div>
+                            <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-200">
+                              <p className="text-xs text-slate-500">
+                                {new Date(m.match_date).toLocaleDateString()}
+                              </p>
+                              {pred && (
+                                <span className="text-xs font-semibold bg-blue-50 text-blue-700 px-2.5 py-1 rounded border border-blue-200">
+                                  {pred.predicted_home_score}–{pred.predicted_away_score}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              )}
+            </div>
 
-    {/* ── Delete modal ── */}
-    {showDeleteModal && (
-      <div className="pd-overlay" onClick={() => setShowDeleteModal(false)}>
-        <div className="pd-modal" onClick={e => e.stopPropagation()}>
-          <div className="pd-modal-ico">🗑️</div>
-          <h2 className="pd-modal-title">Delete "{pool.name}"?</h2>
-          <p className="pd-modal-body">This permanently removes the pool and every prediction inside it. There's no undo.</p>
-          <div className="pd-modal-row">
-            <button onClick={() => setShowDeleteModal(false)} disabled={actionLoading} className="pd-mbtn cancel">Cancel</button>
-            <button onClick={handleDeletePool} disabled={actionLoading} className="pd-mbtn red">{actionLoading ? 'Deleting…' : 'Delete pool'}</button>
-          </div>
-        </div>
-      </div>
-    )}
+            {/* Leaderboard */}
+            <div className="lg:col-span-1">
+              <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                🏆 Leaderboard
+              </h2>
 
-    {/* ── Leave modal ── */}
-    {showLeaveModal && (
-      <div className="pd-overlay" onClick={() => setShowLeaveModal(false)}>
-        <div className="pd-modal" onClick={e => e.stopPropagation()}>
-          <div className="pd-modal-ico">🚪</div>
-          <h2 className="pd-modal-title">Leave "{pool.name}"?</h2>
-          <p className="pd-modal-body">You'll be removed and your predictions will be deleted.</p>
-          <div className="pd-modal-row">
-            <button onClick={() => setShowLeaveModal(false)} disabled={actionLoading} className="pd-mbtn cancel">Stay</button>
-            <button onClick={handleLeavePool} disabled={actionLoading} className="pd-mbtn blue">{actionLoading ? 'Leaving…' : 'Leave pool'}</button>
+              {leaderboardLoading ? (
+                <Spinner label="Loading standings…" />
+              ) : leaderboard.length === 0 ? (
+                <div className="bg-slate-50 rounded-lg p-8 text-center border border-slate-200">
+                  <p className="text-xl mb-2">📊</p>
+                  <p className="font-semibold text-slate-900 mb-1">No standings yet</p>
+                  <p className="text-sm text-slate-600">Appears once members predict</p>
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                  <div className="grid grid-cols-12 gap-2 bg-slate-50 px-4 py-3 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <div className="col-span-2">#</div>
+                    <div className="col-span-7">Player</div>
+                    <div className="col-span-3 text-right">Pts</div>
+                  </div>
+                  {leaderboard.map((e: any, i: number) => (
+                    <div
+                      key={e.userId}
+                      className={`grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-100 items-center transition-colors ${
+                        e.userId === session?.user?.id ? 'bg-blue-50' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="col-span-2 text-sm font-bold">
+                        {i === 0 && '🥇'}
+                        {i === 1 && '🥈'}
+                        {i === 2 && '🥉'}
+                        {i > 2 && <span className="text-slate-600">#{i + 1}</span>}
+                      </div>
+                      <div className="col-span-7 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">
+                          {e.name}
+                          {e.userId === session?.user?.id && (
+                            <span className="ml-2 text-xs font-bold bg-blue-200 text-blue-800 px-2 py-0.5 rounded inline">
+                              you
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">{e.email}</p>
+                      </div>
+                      <div className="col-span-3 text-right text-sm font-bold text-blue-600">
+                        {e.totalPoints}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Delete modal */}
+        {showDeleteModal && (
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+            onClick={() => setShowDeleteModal(false)}
+          >
+            <div
+              className="bg-white rounded-lg max-w-sm w-full p-8 shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <p className="text-3xl mb-4">🗑️</p>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">Delete "{pool.name}"?</h2>
+              <p className="text-sm text-slate-600 mb-8">
+                This permanently removes the pool and every prediction inside it. There's no undo.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={actionLoading}
+                  className="flex-1 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeletePool}
+                  disabled={actionLoading}
+                  className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {actionLoading ? 'Deleting…' : 'Delete pool'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Leave modal */}
+        {showLeaveModal && (
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+            onClick={() => setShowLeaveModal(false)}
+          >
+            <div
+              className="bg-white rounded-lg max-w-sm w-full p-8 shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <p className="text-3xl mb-4">🚪</p>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">Leave "{pool.name}"?</h2>
+              <p className="text-sm text-slate-600 mb-8">
+                You'll be removed and your predictions will be deleted.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLeaveModal(false)}
+                  disabled={actionLoading}
+                  className="flex-1 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50"
+                >
+                  Stay
+                </button>
+                <button
+                  onClick={handleLeavePool}
+                  disabled={actionLoading}
+                  className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {actionLoading ? 'Leaving…' : 'Leave pool'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    )}
     </>
   );
 }
