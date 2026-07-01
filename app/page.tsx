@@ -103,8 +103,8 @@ export default function Home() {
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-10 text-center">Scoring System</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { emoji: '2️⃣', pts: '2 Points', label: 'Exact Score Match' },
-              { emoji: '1️⃣', pts: '1 Point',  label: 'Correct Winner' },
+              { emoji: '5️⃣', pts: '5 Points', label: 'Exact Score Match' },
+              { emoji: '3️⃣', pts: '1 Point',  label: 'Correct Winner' },
               { emoji: '0️⃣', pts: '0 Points', label: 'Incorrect Prediction' },
             ].map(({ emoji, pts, label }) => (
               <div key={label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-center border border-white/20">

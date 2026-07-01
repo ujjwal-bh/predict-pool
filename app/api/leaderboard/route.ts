@@ -49,7 +49,7 @@ function scorePrediction(
       (pred.predicted_winner === 'draw' && home_score === away_score));
 
   return {
-    points: isExact ? 2 : isCorrectWinner ? 1 : 0,
+    points: isExact ? 5 : isCorrectWinner ? 3 : 0,
     isExact,
     isCorrectWinner,
   };

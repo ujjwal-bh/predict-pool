@@ -186,7 +186,7 @@ export default function DashboardPage() {
               </li>
               <li className="flex items-start space-x-4">
                 <span className="font-semibold text-blue-600 min-w-8">3</span>
-                <span>Earn 2 points for correct score predictions</span>
+                <span>Earn 3 points for correct winner and 5 for correct score prediction.</span>
               </li>
               <li className="flex items-start space-x-4">
                 <span className="font-semibold text-blue-600 min-w-8">4</span>
