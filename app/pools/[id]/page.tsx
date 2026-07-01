@@ -46,6 +46,7 @@ interface Prediction {
   predicted_home_score: number;
   predicted_away_score: number;
   predicted_winner: string;
+  points?: number;
 }
 
 export default function PoolDetailPage() {
@@ -320,6 +321,12 @@ export default function PoolDetailPage() {
 
             {/* Action buttons */}
             <div className="flex gap-3">
+              <Link
+                href={`/pools/${params.id}/predictions`}
+                className="px-4 py-2 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                View All Predictions
+              </Link>
               {isCreator ? (
                 <button
                   onClick={() => setShowDeleteModal(true)}
@@ -501,6 +508,23 @@ export default function PoolDetailPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {completedMatches.map((m: any) => {
                       const pred = predictions.get(m.id);
+                      const getStatusLabel = (prediction: any, match: any) => {
+                        if (!prediction) return null;
+
+                        if (prediction.points === 2) return 'Exact';
+                        if (prediction.points === 1) return 'Correct';
+                        return null;
+                      };
+
+                      const getStatusColor = (prediction: any, match: any) => {
+                        if (!prediction) return 'bg-slate-400';
+
+                        if (prediction.points === 2) return 'bg-green-700';
+                        if (prediction.points === 1) return 'bg-blue-700';
+                        return 'bg-red-700';
+                      };
+
+                      const statusLabel = getStatusLabel(pred, m);
                       return (
                         <div
                           key={m.id}
@@ -510,12 +534,12 @@ export default function PoolDetailPage() {
                             <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
                               {m.group_name || m.stage}
                             </p>
-                            <span className={`text-xs font-bold  text-white px-2.5 py-1 rounded ${(pred &&(pred?.predicted_home_score > pred?.predicted_away_score && m.home_score > m.away_score) || (pred && pred?.predicted_away_score > pred?.predicted_home_score && m.away_score > m.home_score) || (pred && pred?.predicted_home_score === pred?.predicted_away_score && m.home_score === m.away_score)) ? ' bg-green-700' : pred ? 'bg-red-700' : 'bg-slate-400'}`}>
-                              Final
+                            <span className={`text-xs font-bold text-white px-2.5 py-1 rounded ${getStatusColor(pred, m)}`}>
+                              {statusLabel || 'Final'}
                             </span>
                           </div>
                           <div className="p-4">
-                            <div className="flex items-center justify-between mb-3"> 
+                            <div className="flex items-center justify-between mb-3">
                               <p className="font-semibold text-slate-900 text-sm">{m.home_team}</p>
                               <p className="text-2xl font-bold text-slate-900">{m.home_score ?? '–'}</p>
                             </div>
@@ -529,9 +553,16 @@ export default function PoolDetailPage() {
                                 {new Date(m.match_date).toLocaleDateString()}
                               </p>
                               {pred && (
-                                <span className="text-xs font-semibold bg-blue-50 text-blue-700 px-2.5 py-1 rounded border border-blue-200">
-                                  {pred.predicted_home_score}–{pred.predicted_away_score}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-semibold bg-blue-50 text-blue-700 px-2.5 py-1 rounded border border-blue-200">
+                                    {pred.predicted_home_score}–{pred.predicted_away_score}
+                                  </span>
+                                  {pred.points !== 0 && (
+                                    <span className="text-xs font-bold bg-amber-50 text-amber-700 px-2.5 py-1 rounded border border-amber-200">
+                                      +{pred.points}
+                                    </span>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>
