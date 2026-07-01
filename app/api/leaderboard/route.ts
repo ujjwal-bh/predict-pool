@@ -18,41 +18,12 @@ interface MemberRow {
 interface PredictionRow {
   user_id: string;
   match_id: string;
-  predicted_home_score: number;
-  predicted_away_score: number;
-  predicted_winner: 'home' | 'away' | 'draw';
+  points: number | null;
 }
 
 interface CompletedMatchRow {
   id: string;
-  home_score: number;
-  away_score: number;
   status: 'completed';
-}
-
-// ── Scoring helper ────────────────────────────────────────────────────────────
-
-function scorePrediction(
-  pred: PredictionRow,
-  match: CompletedMatchRow
-): { points: number; isExact: boolean; isCorrectWinner: boolean } {
-  const { home_score, away_score } = match;
-
-  const isExact =
-    pred.predicted_home_score === home_score &&
-    pred.predicted_away_score === away_score;
-
-  const isCorrectWinner =
-    !isExact &&
-    ((pred.predicted_winner === 'home' && home_score > away_score) ||
-      (pred.predicted_winner === 'away' && away_score > home_score) ||
-      (pred.predicted_winner === 'draw' && home_score === away_score));
-
-  return {
-    points: isExact ? 5 : isCorrectWinner ? 3 : 0,
-    isExact,
-    isCorrectWinner,
-  };
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
@@ -88,12 +59,12 @@ export async function GET(
 
       supabase
         .from('predictions')
-        .select('user_id, match_id, predicted_home_score, predicted_away_score, predicted_winner')
+        .select('user_id, match_id, points')
         .eq('pool_id', poolId),
 
       supabase
         .from('matches')
-        .select('id, home_score, away_score, status')
+        .select('id, status')
         .eq('status', 'completed'),
     ]);
 
@@ -121,9 +92,7 @@ export async function GET(
 
     // ── O(1) lookup maps ──────────────────────────────────────────────────
 
-    const matchMap = new Map<string, CompletedMatchRow>(
-      matches.map(m => [m.id, m])
-    );
+    const completedMatchIds = new Set(matches.map(m => m.id));
 
     const predsByUser = new Map<string, PredictionRow[]>();
     for (const pred of predictions) {
@@ -132,22 +101,24 @@ export async function GET(
       predsByUser.set(pred.user_id, bucket);
     }
 
-    // ── Score each member ─────────────────────────────────────────────────
+    // ── Score each member (points read directly from predictions table) ───
 
     const leaderboard: LeaderboardEntry[] = members.map(member => {
       const userPreds = predsByUser.get(member.user_id) ?? [];
       let totalPoints = 0;
-      let correctPredictions = 0;
-      let correctWinners = 0;
+      let correctPredictions = 0; // exact score
+      let correctWinners = 0; // correct winner only (not exact)
+      let scoredCount = 0;
 
       for (const pred of userPreds) {
-        const match = matchMap.get(pred.match_id);
-        if (!match) continue;
+        // Only count predictions for matches that have actually completed
+        if (!completedMatchIds.has(pred.match_id) || pred.points == null) continue;
 
-        const { points, isExact, isCorrectWinner } = scorePrediction(pred, match);
-        totalPoints += points;
-        if (isExact) correctPredictions += 1;
-        if (isCorrectWinner) correctWinners += 1;
+        totalPoints += pred.points;
+        scoredCount += 1;
+
+        if (pred.points === 5) correctPredictions += 1;
+        else if (pred.points === 3) correctWinners += 1;
       }
 
       return {
@@ -157,7 +128,7 @@ export async function GET(
         totalPoints,
         correctPredictions,
         correctWinners,
-        totalPredictions: userPreds.length,
+        totalPredictions: scoredCount,
       };
     });
 

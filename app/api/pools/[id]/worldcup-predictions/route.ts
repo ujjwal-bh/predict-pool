@@ -40,7 +40,7 @@ export async function GET(
 
     // Fetch world cup predictions for this pool with user details
     const { data: predictions, error: predictionsError } = await supabase
-      .from('worldcup_predictions')
+      .from('world_cup_predictions')
       .select(
         `
         id,
@@ -59,7 +59,7 @@ export async function GET(
       );
     }
 
-    const response: WorldCupPredictionResponse[] = (predictions || []).map(pred => ({
+    const response: WorldCupPredictionResponse[] = (predictions || []).map((pred: { user_id: any; users: { name: any; }; predicted_country: any; }) => ({
       user_id: pred.user_id,
       user_name: pred.users?.name || 'Unknown',
       predicted_country: pred.predicted_country,
